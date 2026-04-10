@@ -1,0 +1,17 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# dependencies
+node_modules/
+
+# zk artifacts
+*.zkey
+*.ptau
+*.wtns
+zk-real/build/
+
+# misc
+backup/
+old_scripts/

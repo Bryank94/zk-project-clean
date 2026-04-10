@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ZK App FINAL</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 400px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        button {
+            background: linear-gradient(135deg, #4CAF50, #2ecc71);
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #43a047, #27ae60);
+        }
+
+        #resultado {
+            background: #f7f9fc;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            text-align: left;
+            font-size: 14px;
+            border: 1px solid #e0e0e0;
+            min-height: 80px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>ZK App</h1>
+
+        <button onclick="conectarYVerificar()">Verificar Proof</button>
+
+        <pre id="resultado"></pre>
+    </div>
+
+    <!-- ethers -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+    <script>
+    async function conectarYVerificar() {
+        const resultado = document.getElementById("resultado");
+
+        try {
+            resultado.innerText = "1) Generando proof...\n";
+
+            const score = 812;
+            const min = 700;
+            const max = 850;
+            const age = 25;
+
+            // BACKEND
+            const res = await fetch(`/prove?score=${score}&min=${min}&max=${max}&age=${age}`);
+            const data = await res.json();
+
+            if (!data.success) {
+                throw new Error(data.error);
+            }
+
+            resultado.innerText += "2) Proof generado\n";
+
+            const { pA, pB, pC, pubSignals } = data;
+
+            // RPC estable
+            const provider = new ethers.providers.JsonRpcProvider(
+                "https://eth-sepolia.g.alchemy.com/v2/rbDH7Y3t3_hurrn7Rt4VA"
+            );
+
+            const contractAddress = "0x03B311c1fE7DB984eC296e572206c92714EF97f6";
+
+            const abi = [
+                "function verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[2]) public view returns(bool)"
+            ];
+
+            const contract = new ethers.Contract(contractAddress, abi, provider);
+
+            resultado.innerText += "3) Verificando on-chain...\n";
+
+            const ok = await contract.verifyProof(pA, pB, pC, pubSignals);
+
+            resultado.innerText += "Resultado: " + (ok ? "✅ VÁLIDO" : "❌ INVÁLIDO");
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById("resultado").innerText =
+                "ERROR: " + err.message;
+        }
+    }
+    </script>
+</body>
+</html>
