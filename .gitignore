@@ -1,0 +1,28 @@
+# secretos
+.env
+.env.*
+*.key
+
+# node
+node_modules/
+
+# hardhat
+artifacts/
+cache/
+
+# logs
+logs/
+*.log
+
+# build
+dist/
+build/
+
+# backups y paquetes
+*.zip
+*.tar
+*.gz
+
+# sistema
+.DS_Store
+Thumbs.db
