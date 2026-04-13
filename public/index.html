@@ -98,10 +98,14 @@
 
             const { pA, pB, pC, pubSignals } = data;
 
-            // RPC estable
-            const provider = new ethers.providers.JsonRpcProvider(
-                "https://eth-sepolia.g.alchemy.com/v2/rbDH7Y3t3_hurrn7Rt4VA"
-            );
+            // ✅ USAR METAMASK (NO RPC HARDCODEADO)
+            if (!window.ethereum) {
+                throw new Error("MetaMask no detectado");
+            }
+
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
 
             const contractAddress = "0x03B311c1fE7DB984eC296e572206c92714EF97f6";
 

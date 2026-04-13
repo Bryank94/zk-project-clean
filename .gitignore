@@ -1,17 +1,20 @@
-# secrets
+# secretos
 .env
 .env.*
-!.env.example
+*.key
 
-# dependencies
+# node
 node_modules/
 
-# zk artifacts
-*.zkey
-*.ptau
-*.wtns
-zk-real/build/
+# logs
+logs
+*.log
 
-# misc
-backup/
-old_scripts/
+# build
+dist/
+build/
+
+# backups
+*.zip
+*.tar
+*.gz
