@@ -6,15 +6,23 @@
 # node
 node_modules/
 
+# hardhat
+artifacts/
+cache/
+
 # logs
-logs
+logs/
 *.log
 
 # build
 dist/
 build/
 
-# backups
+# backups y paquetes
 *.zip
 *.tar
 *.gz
+
+# sistema
+.DS_Store
+Thumbs.db
