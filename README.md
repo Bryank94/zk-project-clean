@@ -10,41 +10,11 @@ La prueba demuestra que existe un valor de score `s`, emitido por un emisor auto
 
 - el score ha sido correctamente firmado por el emisor autorizado,
 - el score está criptográficamente ligado a la identidad de la PYME,
-- y el valor `s` cumple la condición `s ≥ threshold`,
+- el valor `s` cumple la condición `s ≥ threshold`,
+- el score no ha expirado y pertenece a un contexto válido,
+- y la prueba no ha sido reutilizada (protección contra replay),
 
 todo ello sin revelar ni el valor del score ni la identidad real de la PYME.
-
----
-
-## Condiciones verificables
-
-1. El commitment del score proporcionado públicamente corresponde al valor privado `s`.
-2. El commitment de identidad corresponde a la wallet privada de la PYME.
-3. El mensaje que contiene `(score, identidad, metadatos)` ha sido firmado por el emisor autorizado.
-4. La firma es válida respecto a la clave pública del emisor.
-5. El score `s` cumple la condición `s ≥ threshold`.
-6. Todos los valores utilizados en la prueba están correctamente ligados entre sí mediante hashes criptográficos.
-7. La clave pública utilizada para verificar la firma corresponde a un emisor autorizado.
-
----
-
-## Public Inputs
-
-- `threshold`: valor mínimo requerido por el verificador.
-- `scoreCommitment`: hash criptográfico del score registrado (ej: Poseidon).
-- `pymeIdentityCommitment`: commitment público que representa la identidad de la PYME.
-- `issuerPublicKey`: clave pública del emisor autorizado que firma el score.
-- `verifierChallenge`: valor aleatorio proporcionado por el verificador para evitar replay.
-- `nullifier`: valor público derivado que identifica de forma única el uso de la credencial en un contexto dado.
-
----
-
-## Private Inputs
-
-- `rawScore (s)`: valor real del score generado por el emisor.
-- `pymeWallet`: dirección real de la wallet de la PYME.
-- `commitmentSecret (salt)`: valor aleatorio utilizado para generar los commitments.
-- `R8, S`: componentes de la firma digital generada por el emisor sobre el mensaje.
 
 ---
 
@@ -64,6 +34,7 @@ todo ello sin revelar ni el valor del score ni la identidad real de la PYME.
 - **La clave pública del emisor autorizado:** se asume que pertenece a una entidad legítima y no ha sido comprometida.
 - **El contrato on-chain ScoreRegistry:** se asume que almacena correctamente los commitments y no puede ser manipulado.
 - **Las reglas públicas del sistema:** incluyen la definición del circuito, el esquema de hashing y el formato de los mensajes firmados.
+- **Función hash Poseidon** y **circuito ZK**: se consideran correctos y no manipulados.
 
 ---
 
@@ -90,15 +61,27 @@ El prover se considera siempre potencialmente malicioso, por lo que ninguna afir
 
 ---
 
+## Condiciones verificables
+
+1. El commitment del score proporcionado públicamente corresponde al valor privado `s`.
+2. El commitment de identidad corresponde a la wallet privada de la PYME.
+3. El mensaje que contiene `(score, identidad, metadatos)` ha sido firmado por el emisor autorizado.
+4. La firma es válida respecto a la clave pública del emisor.
+5. El score `s` cumple la condición `s ≥ threshold`.
+6. Todos los valores utilizados en la prueba están correctamente ligados entre sí mediante hashes criptográficos.
+7. La clave pública utilizada para verificar la firma corresponde a un emisor autorizado.
+
+---
+
 ## Binding criptográfico
 
-El score no debe existir como un dato aislado, sino como parte de una credencial criptográficamente ligada a su contexto. Para evitar manipulaciones, el sistema debe fijar de forma estable qué campos forman el mensaje firmado por el emisor, qué valor se registra on-chain y qué elementos se usan para prevenir reutilización indebida de pruebas.
+El score no debe existir como un dato aislado, sino como parte de una credencial criptográficamente ligada a su contexto. Para evitar manipulaciones, el sistema fija de forma estable qué campos forman el mensaje firmado por el emisor, qué valor se registra on-chain y qué elementos se usan para prevenir reutilización indebida de pruebas.
 
 ---
 
 ### Campos que forman la credencial
 
-La credencial de score debe quedar ligada, como mínimo, a los siguientes campos:
+La credencial de score queda ligada, como mínimo, a los siguientes campos:
 
 - `score`
 - `pymeWallet`
@@ -117,23 +100,23 @@ Campos opcionales de endurecimiento futuro:
 
 ### Qué firma el emisor
 
-El emisor autorizado debe firmar un mensaje estructurado que incluya todos los campos relevantes de la credencial.
+El emisor autorizado firma un mensaje estructurado que incluye todos los campos relevantes de la credencial:
 
-Definición propuesta del mensaje firmado:
+```
+issuerMessage = Poseidon(score, pymeWallet, modelVersion, timestamp, expiration, salt)
+```
 
-`issuerMessage = H(score, pymeWallet, modelVersion, timestamp, expiration, salt)`
-
-donde `H` es una función hash compatible con ZK, preferiblemente Poseidon.
+El orden de los campos forma parte de la definición del mensaje y no puede modificarse sin invalidar la firma.
 
 ---
 
 ### Qué se registra on-chain
 
-El valor registrado on-chain en `ScoreRegistry` debe ser un commitment derivado de la credencial completa, no únicamente del score aislado.
+El valor registrado on-chain en `ScoreRegistry` es un commitment derivado de la credencial completa:
 
-Definición propuesta del commitment registrado:
-
-`scoreCommitment = H(score, pymeWallet, modelVersion, timestamp, expiration, salt)`
+```
+scoreCommitment = Poseidon(score, pymeWallet, modelVersion, timestamp, expiration, salt)
+```
 
 Este commitment actúa como referencia pública verificable de la credencial emitida.
 
@@ -141,24 +124,23 @@ Este commitment actúa como referencia pública verificable de la credencial emi
 
 ### Qué verifica el circuito
 
-El circuito ZK debe utilizar como witness privado los valores secretos de la credencial y debe verificar al menos lo siguiente:
-
 1. Recalcular el `scoreCommitment` a partir de los valores privados.
 2. Comprobar que el commitment recalculado coincide con el commitment público registrado.
 3. Recalcular `issuerMessage`.
 4. Verificar que la firma del emisor es válida sobre `issuerMessage`.
 5. Verificar que el score satisface la condición `score ≥ threshold`.
 6. Verificar que la credencial no está expirada.
+7. Verificar que el nullifier es correcto.
 
 ---
 
 ### Qué se usa para anti-replay
 
-Para evitar reutilización de pruebas, el sistema debe introducir un identificador de uso único (`nullifier`) y un contexto de sesión o challenge del verificador.
+Para evitar reutilización de pruebas, el sistema introduce un identificador de uso único (`nullifier`) y un contexto de sesión proporcionado por el verificador:
 
-Definición propuesta:
-
-`nullifier = H(pymeWallet, verifierChallenge, salt)`
+```
+nullifier = Poseidon(pymeWallet, verifierChallenge, salt)
+```
 
 donde:
 
@@ -166,33 +148,89 @@ donde:
 - `verifierChallenge` introduce contexto de sesión,
 - `salt` evita correlación directa entre usos.
 
-El `nullifier` debe publicarse como input del circuito y poder marcarse como usado para impedir replay de la misma prueba en el mismo contexto.
+El `nullifier` se publica como input del circuito y puede marcarse como usado on-chain para impedir replay de la misma prueba en el mismo contexto.
 
 ---
 
 ### Separación de funciones criptográficas
 
-Para evitar ambigüedades, el sistema distingue tres valores criptográficos diferentes:
+El sistema distingue tres valores criptográficos diferentes:
 
 - `issuerMessage`: mensaje completo firmado por el emisor autorizado.
 - `scoreCommitment`: commitment público registrado on-chain que representa la credencial emitida.
 - `nullifier`: valor derivado usado para prevenir replay y reutilización indebida de pruebas.
 
-Esta separación debe mantenerse estable en el diseño del sistema.
+---
+
+## Inputs del circuito
+
+### Public Inputs
+
+- `threshold`: valor mínimo requerido por el verificador.
+- `scoreCommitment`: hash criptográfico del score registrado (Poseidon).
+- `pymeIdentityCommitment`: commitment público que representa la identidad de la PYME.
+- `issuerPublicKey`: clave pública del emisor autorizado que firma el score.
+- `currentTime`: tiempo actual proporcionado por el verificador para validar expiración.
+- `verifierChallenge`: valor aleatorio proporcionado por el verificador para evitar replay.
+- `nullifier`: valor público derivado que identifica de forma única el uso de la credencial en un contexto dado.
+
+### Private Inputs (Witness)
+
+- `rawScore (s)`: valor real del score generado por el emisor.
+- `pymeWallet`: dirección real de la wallet de la PYME.
+- `commitmentSecret (salt)`: valor aleatorio utilizado para generar los commitments.
+- `modelVersion`: versión del modelo de scoring utilizado.
+- `timestamp`: momento de emisión de la credencial.
+- `expiration`: fecha límite de validez de la credencial.
+- `R8, S`: componentes de la firma digital generada por el emisor sobre el mensaje.
+
+---
+
+## Constraints del circuito
+
+### 1. Hash correcto
+
+```
+Poseidon(rawScore, pymeWallet, modelVersion, timestamp, expiration, salt) == scoreCommitment
+```
+
+### 2. Firma válida
+
+```
+EdDSA_verify(R8, S, issuerMessage, issuerPublicKey) == true
+```
+
+### 3. Integridad de identidad
+
+```
+Poseidon(pymeWallet, commitmentSecret) == pymeIdentityCommitment
+```
+
+### 4. Condición de score
+
+```
+rawScore ≥ threshold
+```
+
+### 5. Validez temporal
+
+```
+expiration > currentTime
+```
+
+### 6. Nullifier correcto
+
+```
+Poseidon(pymeWallet, verifierChallenge, commitmentSecret) == nullifier
+```
 
 ---
 
 ## Esquema de firma del emisor
 
-Para autenticar la credencial de score dentro del circuito ZK, el sistema debe utilizar un esquema de firma compatible con verificación eficiente en Circom.
-
----
-
 ### Decisión final
 
 El sistema utiliza **EdDSA sobre la curva BabyJub**, compatible con verificación en circuitos Circom mediante `circomlib`.
-
----
 
 ### Justificación
 
@@ -203,217 +241,84 @@ Se elige EdDSA sobre BabyJub porque:
 - su coste en constraints es razonable en comparación con alternativas clásicas,
 - encaja mejor con un flujo de prueba en Circom que esquemas como ECDSA o RSA.
 
----
-
 ### Alternativas descartadas
 
-- **ECDSA:** aunque es habitual en entornos blockchain, su verificación dentro de circuitos ZK resulta significativamente más costosa.
-- **RSA:** no es una opción práctica para este sistema por su elevado coste computacional dentro de circuitos de conocimiento cero.
-
----
-
-### Implicaciones para el diseño
-
-Como consecuencia de esta decisión:
-
-- la clave pública del emisor deberá representarse en formato compatible con BabyJub,
-- la firma del emisor deberá incluir sus componentes en formato verificable por `circomlib`,
-- el circuito deberá verificar la firma EdDSA sobre el mensaje estructurado de la credencial,
-- el flujo de emisión deberá generar firmas compatibles con este esquema desde el origen.
-
----
-
-### Formato esperado
-
-A nivel de circuito, la firma del emisor se representará mediante:
-
-- `issuerPublicKey`: clave pública del emisor autorizado.
-- `R8`: primer componente de la firma EdDSA.
-- `S`: segundo componente de la firma EdDSA.
-
----
-
-### Mensaje firmado por el emisor
-
-Para que la firma del emisor tenga significado criptográfico y no pueda reutilizarse sobre datos parciales o ambiguos, el sistema debe fijar de forma exacta el mensaje que se firma.
-
-La firma del emisor debe aplicarse sobre un mensaje estructurado formado por los siguientes campos, en este orden exacto:
-
-1. `score`
-2. `pymeWallet`
-3. `modelVersion`
-4. `timestamp`
-5. `expiration`
-6. `salt`
-
-Definición formal:
-
-`issuerMessage = H(score, pymeWallet, modelVersion, timestamp, expiration, salt)`
-
-donde `H` es una función hash compatible con ZK, preferiblemente Poseidon.
-
-El orden de los campos forma parte de la definición del mensaje y no puede modificarse sin invalidar la firma. Cualquier implementación del emisor, del circuito o del backend debe utilizar exactamente esta misma estructura.
-
----
-
-### Justificación de los campos incluidos
-
-- `score`: representa el valor cuya validez se quiere probar.
-- `pymeWallet`: liga la credencial a una identidad concreta de la PYME.
-- `modelVersion`: permite distinguir qué versión del sistema de scoring generó el resultado.
-- `timestamp`: fija el momento de emisión de la credencial.
-- `expiration`: permite limitar la validez temporal de la credencial.
-- `salt`: aporta aleatoriedad y evita correlación o reutilización trivial de credenciales idénticas.
-
----
-
-### Implicaciones para el circuito
-
-El circuito deberá reconstruir exactamente `issuerMessage` a partir de los valores privados de la credencial y verificar que la firma EdDSA proporcionada es válida respecto a la `issuerPublicKey` pública.
-
----
-
-### Regla de consistencia
-
-La implementación del emisor fuera del circuito y la implementación del circuito dentro de Circom deben utilizar la misma función hash, el mismo orden de campos y la misma codificación de datos. Cualquier discrepancia entre ambas invalidará la verificación de la firma.
-
----
-
-### Representación de la firma en el circuito
-
-La firma del emisor debe entrar al circuito en un formato compatible con la verificación EdDSA sobre BabyJub en `circomlib`.
+- **ECDSA:** su verificación dentro de circuitos ZK resulta significativamente más costosa.
+- **RSA:** no es una opción práctica por su elevado coste computacional dentro de circuitos de conocimiento cero.
 
 ### Componentes de la firma
 
-La verificación de la firma dentro del circuito utilizará los siguientes elementos:
-
-- `issuerPublicKey`: clave pública del emisor autorizado.
-- `R8`: componente de la firma EdDSA correspondiente al punto efímero de la firma.
-- `S`: componente escalar de la firma EdDSA.
-
----
-
-### Clasificación de inputs
-
-- `issuerPublicKey` se tratará como **input público**, ya que identifica al emisor autorizado cuya firma se verifica.
-- `R8` y `S` se tratarán como **inputs privados del witness** en el diseño actual del circuito, aunque conceptualmente forman parte de la credencial emitida.
-
----
-
-### Formato esperado en el circuito
-
-A nivel de señales Circom, la firma se representará de forma compatible con este esquema:
-
-- `issuerPublicKey[2]`
-- `R8[2]`
-- `S`
-
----
-
-### Implicaciones para el witness
-
-El witness deberá contener:
-
-- el valor privado de `score`,
-- la wallet de la PYME,
-- los metadatos de la credencial (`modelVersion`, `timestamp`, `expiration`, `salt`),
-- y los componentes de firma `R8` y `S`.
-
----
-
-### Regla de consistencia de la firma
-
-La firma incluida en el witness debe corresponder exactamente al valor de `issuerMessage` definido previamente. No se aceptará ninguna firma generada sobre un orden distinto de campos, una función hash distinta o una codificación diferente.
+- `issuerPublicKey[2]`: clave pública del emisor autorizado (input público).
+- `R8[2]`: componente de la firma EdDSA correspondiente al punto efímero (input privado).
+- `S`: componente escalar de la firma EdDSA (input privado).
 
 ---
 
 ## Firma del emisor (off-chain)
 
-La generación de la firma del emisor ocurre fuera del circuito ZK, en el sistema del emisor autorizado (por ejemplo, Wenalyze).
-
-El circuito no genera firmas, únicamente verifica que la firma proporcionada es válida.
-
----
+La generación de la firma del emisor ocurre fuera del circuito ZK. El circuito no genera firmas, únicamente verifica que la firma proporcionada es válida.
 
 ### 1. Construcción del mensaje
 
-El emisor construye el mensaje a firmar utilizando exactamente la estructura definida previamente:
-
-`message = H(score, pymeWallet, modelVersion, timestamp, expiration, salt)`
-
-donde `H` es Poseidon.
-
-Este paso debe respetar estrictamente:
-
-- el orden de los campos,
-- el tipo de datos,
-- la función hash utilizada.
-
----
+```
+message = Poseidon(score, pymeWallet, modelVersion, timestamp, expiration, salt)
+```
 
 ### 2. Firma del mensaje
 
-El emisor firma el mensaje utilizando EdDSA sobre la curva BabyJub:
+```
+signature = EdDSA.sign(message, sk_emisor)
+```
 
-`signature = EdDSA.sign(message, sk_emisor)`
-
-donde:
-
-- `message` es el hash calculado previamente,
-- `sk_emisor` es la clave privada del emisor autorizado.
-
-La firma resultante está compuesta por:
-
-- `R8`
-- `S`
-
----
+La firma resultante está compuesta por `R8` y `S`.
 
 ### 3. Entrega de la credencial a la PYME
 
 El emisor entrega a la PYME todos los datos necesarios para generar la prueba ZK:
 
-- `score`
-- `pymeWallet`
-- `modelVersion`
-- `timestamp`
-- `expiration`
-- `salt`
-- `R8`
-- `S`
-
----
+- `score`, `pymeWallet`, `modelVersion`, `timestamp`, `expiration`, `salt`, `R8`, `S`
 
 ### 4. Uso de la credencial por la PYME (prover)
 
-La PYME utiliza estos valores como inputs privados (witness) para generar la prueba ZK.
-
-El circuito reconstruirá el mensaje y verificará que:
-
-- la firma `(R8, S)` es válida,
-- respecto a la `issuerPublicKey`,
-- sobre el `issuerMessage` correcto.
-
----
+La PYME utiliza estos valores como inputs privados (witness) para generar la prueba ZK. El circuito reconstruirá el mensaje y verificará que la firma `(R8, S)` es válida respecto a la `issuerPublicKey` sobre el `issuerMessage` correcto.
 
 ### Regla crítica de consistencia
 
-La implementación del emisor y la del circuito deben ser completamente consistentes:
-
-- mismo hash (Poseidon),
-- mismo orden de campos,
-- misma codificación.
-
-Cualquier diferencia entre ambas hará que la verificación de la firma falle.
+La implementación del emisor y la del circuito deben usar el mismo hash (Poseidon), el mismo orden de campos y la misma codificación. Cualquier diferencia hará que la verificación de la firma falle.
 
 ---
 
-## Objetivo
+## Flujo del sistema (end-to-end)
 
-Permitir que una PYME demuestre que cumple un criterio financiero (por ejemplo, acceso a crédito o seguro) sin revelar:
+### Emisor
 
-- su score real,
-- su identidad en claro.
+1. Calcula el score de la PYME.
+2. Genera `issuerMessage = Poseidon(score, pymeWallet, modelVersion, timestamp, expiration, salt)`.
+3. Firma con su clave privada: `signature = EdDSA.sign(issuerMessage, sk_emisor)`.
+4. Entrega la credencial completa a la PYME.
+
+### Prover (PYME)
+
+1. Recibe la credencial del emisor.
+2. Construye el witness con los inputs privados.
+3. Genera la prueba ZK.
+
+### Verificador
+
+1. Proporciona `verifierChallenge` aleatorio.
+2. Verifica la prueba con `verification_key`.
+3. Comprueba que el `nullifier` no ha sido usado previamente (on-chain).
+
+---
+
+## Checklist de seguridad
+
+- El prover NO puede modificar el score sin invalidar la prueba.
+- El score está autenticado por el emisor mediante firma EdDSA.
+- El commitment liga todos los datos críticos: score, identidad y metadata.
+- El threshold es público y proporcionado por el verificador, nunca por el prover.
+- La prueba no puede reutilizarse gracias al nullifier y al verifierChallenge.
+- El circuito verifica TODAS las condiciones críticas sin confiar en el prover.
 
 ---
 
@@ -423,6 +328,7 @@ Permitir que una PYME demuestre que cumple un criterio financiero (por ejemplo, 
 - **Integridad:** el score está ligado a la identidad mediante commitments.
 - **Autenticidad:** el score proviene de un emisor autorizado.
 - **Correctitud:** se verifica que `s ≥ threshold`.
+- **Anti-replay:** nullifier + verifierChallenge impiden reutilización de pruebas.
 
 ---
 

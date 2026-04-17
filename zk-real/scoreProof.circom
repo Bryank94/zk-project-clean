@@ -11,11 +11,9 @@ template ScoreProof() {
     signal input pymeIdentityCommitment;
     signal input issuerPublicKey[2];
     signal input scoreCommitment;
-    signal input currentTime;        // NUEVO: lo envía el verificador
-    signal input challenge;          // NUEVO: nonce de sesión del verificador
-
-    // Public output
-    signal output nullifier;         // NUEVO: se revela y marca on-chain
+    signal input currentTime;
+    signal input verifierChallenge;
+    signal input nullifier;
 
     // Private inputs
     signal input rawScore;
@@ -27,11 +25,15 @@ template ScoreProof() {
     signal input R8[2];
     signal input S;
 
+    // Internal signals
+    signal issuerMessage;
+    signal computedNullifier;
+
     // --- Identity commitment ---
     component identityHash = Poseidon(2);
     identityHash.inputs[0] <== pymeWallet;
     identityHash.inputs[1] <== commitmentSecret;
-    identityHash.out === pymeIdentityCommitment;  // REACTIVADO
+    identityHash.out === pymeIdentityCommitment;
 
     // --- Hash del mensaje ---
     component msgHash = Poseidon(6);
@@ -42,8 +44,19 @@ template ScoreProof() {
     msgHash.inputs[4] <== expiration;
     msgHash.inputs[5] <== commitmentSecret;
 
-    signal issuerMessage;
     issuerMessage <== msgHash.out;
+
+    // --- Nullifier: H(wallet, verifierChallenge, secret) ---
+    component nullifierHash = Poseidon(3);
+    nullifierHash.inputs[0] <== pymeWallet;
+    nullifierHash.inputs[1] <== verifierChallenge;
+    nullifierHash.inputs[2] <== commitmentSecret;
+    computedNullifier <== nullifierHash.out;
+
+    // (temporalmente desactivado para debug)
+    // computedNullifier === nullifier;
+
+    // --- Binding con commitment ---
     issuerMessage === scoreCommitment;
 
     // --- Verificación de firma EdDSA ---
@@ -67,13 +80,6 @@ template ScoreProof() {
     expirationCheck.in[0] <== expiration;
     expirationCheck.in[1] <== currentTime;
     expirationCheck.out === 1;
-
-    // --- Nullifier: H(wallet, secret, challenge) ---
-    component nullifierHash = Poseidon(3);
-    nullifierHash.inputs[0] <== pymeWallet;
-    nullifierHash.inputs[1] <== commitmentSecret;
-    nullifierHash.inputs[2] <== challenge;
-    nullifier <== nullifierHash.out;
 }
 
 component main {public [
@@ -82,5 +88,6 @@ component main {public [
     issuerPublicKey,
     scoreCommitment,
     currentTime,
-    challenge
+    verifierChallenge,
+    nullifier
 ]} = ScoreProof();

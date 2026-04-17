@@ -16,25 +16,51 @@ async function main() {
   const timestamp = 1000;
   const expiration = 2000;
 
+  const challenge = 42; // 👈 IMPORTANTE
+
   // Mensaje que firma el emisor
-  const inputs = [rawScore, pymeWallet, modelVersion, timestamp, expiration, commitmentSecret];
+  const inputs = [
+    rawScore,
+    pymeWallet,
+    modelVersion,
+    timestamp,
+    expiration,
+    commitmentSecret
+  ];
+
   const msg = poseidon(inputs);
   const signature = eddsa.signPoseidon(prvKey, msg);
 
-  // Identity commitment del prover
-  const identityCommitment = poseidon([BigInt(pymeWallet), BigInt(commitmentSecret)]);
+  // Identity commitment
+  const identityCommitment = poseidon([
+    BigInt(pymeWallet),
+    BigInt(commitmentSecret)
+  ]);
+
+  // 🔥 NULLIFIER (nuevo)
+  const nullifier = poseidon([
+    BigInt(pymeWallet),
+    BigInt(challenge),
+    BigInt(commitmentSecret)
+  ]);
 
   console.log("issuerPublicKey:", [
     F.toObject(pubKey[0]).toString(),
     F.toObject(pubKey[1]).toString()
   ]);
+
   console.log("R8:", [
     F.toObject(signature.R8[0]).toString(),
     F.toObject(signature.R8[1]).toString()
   ]);
+
   console.log("S:", signature.S.toString());
+
   console.log("scoreCommitment:", poseidon.F.toString(msg));
+
   console.log("pymeIdentityCommitment:", poseidon.F.toString(identityCommitment));
+
+  console.log("nullifier:", poseidon.F.toString(nullifier)); // 👈 NUEVO
 }
 
 main().catch(console.error);
