@@ -18,6 +18,42 @@ todo ello sin revelar ni el valor del score ni la identidad real de la PYME.
 
 ---
 
+## Circuit Statement (Formal)
+
+El circuito prueba que existen valores privados:
+
+- score
+- pymeWallet
+- modelVersion
+- timestamp
+- expiration
+- salt
+- signature (R8, S)
+
+tales que se cumplen las siguientes condiciones:
+
+1. El mensaje firmado por el emisor se construye como:
+
+   `issuerMessage = H(score, pymeWallet, modelVersion, timestamp, expiration, salt)`
+
+2. El commitment público corresponde al mensaje:
+
+   `scoreCommitment = issuerMessage`
+
+3. La firma es válida respecto a la clave pública del emisor:
+
+   `EdDSA_verify(issuerPublicKey, issuerMessage, R8, S) = true`
+
+4. El score cumple la condición requerida:
+
+   `score ≥ threshold`
+
+5. La credencial no está expirada:
+
+   `timestamp ≤ expiration`
+
+---
+
 ## Actores y modelo de confianza
 
 ### Actores
@@ -186,6 +222,31 @@ El sistema distingue tres valores criptográficos diferentes:
 
 ---
 
+### Valores que NO son public inputs
+
+Los siguientes valores no deben exponerse como inputs públicos porque son sensibles o forman parte del witness privado:
+
+- `rawScore`
+- `pymeWallet`
+- `modelVersion`
+- `timestamp`
+- `expiration`
+- `salt`
+- `R8`
+- `S`
+
+Estos valores participan en constraints internos del circuito, pero no deben revelarse al verificador.
+
+---
+
+### Decisión final
+
+El nuevo circuito de Fase 2 utilizará exactamente cinco public inputs:
+
+`threshold`, `scoreCommitment`, `pymeIdentityCommitment`, `issuerPublicKey`, `challenge`.
+
+---
+
 ## Constraints del circuito
 
 ### 1. Hash correcto
@@ -339,6 +400,69 @@ La implementación del emisor y la del circuito deben usar el mismo hash (Poseid
 - `scripts/`: scripts de despliegue y test
 - `public/`: interfaz web básica
 - `server.js`: backend de simulación
+- `docs/phase2_circuit_spec.md`: especificación técnica de la Fase 2 del circuito ZK
+
+---
+
+## ⚠️ Legacy Circuit (Deprecated)
+
+The current circuit implementation is deprecated and kept only for reference.
+
+It does NOT implement:
+
+- secure issuer signature verification
+- full cryptographic binding
+- replay protection
+
+A new circuit will be implemented from scratch.
+
+---
+
+### ❌ Lo que NO se reutiliza
+
+Las siguientes piezas del circuito actual quedan descartadas en la nueva implementación:
+
+- **Lógica de firma actual:** la verificación de firma no está correctamente implementada y no puede considerarse segura.
+- **Estructura de `message`:** el mensaje firmado no estaba correctamente definido ni ligado a todos los campos requeridos.
+- **Bindings incompletos:** varios campos de la credencial no estaban incluidos en el commitment ni en el mensaje firmado.
+- **Comparadores mal definidos:** algunos constraints de comparación no cubrían todos los casos necesarios.
+- **Shortcuts inseguros**, como:
+
+```circom
+isValidSignature <== 1;
+```
+
+Este tipo de asignación fuerza el resultado sin verificar nada, invalidando la seguridad del circuito.
+
+---
+
+### ✔️ Lo que SÍ se reutiliza
+
+Solo se reutilizan piezas simples, verificables y bien definidas:
+
+- **Poseidon hash:** función hash compatible con ZK, correctamente integrada mediante `circomlib`.
+- **Comparator (`GreaterEqThan`):** componente estándar de `circomlib` para verificar `score ≥ threshold`.
+- **Estructura básica de inputs:** la separación entre public inputs y private inputs (witness) es correcta y se mantiene.
+- **Pipeline de snarkjs:** el flujo de compilación, generación de witness, prueba y verificación funciona correctamente y se conserva íntegro.
+
+---
+
+### Declaración de reescritura
+
+The new circuit will be a full rewrite.
+
+No core cryptographic logic from the legacy circuit will be reused
+without explicit review and validation.
+
+---
+
+### Checklist de verificación
+
+- ✔ El circuito legacy está claramente identificado como deprecado.
+- ✔ No debe usarse por accidente en scripts de producción ni de test.
+- ✔ Está documentado explícitamente como inseguro en este README.
+- ✔ Existe un punto de referencia (tag o commit) para volver atrás si es necesario.
+- ✔ Las partes que NO deben reutilizarse están listadas de forma explícita.
 
 ---
 

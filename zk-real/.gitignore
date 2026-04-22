@@ -1,4 +1,31 @@
+# secretos
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.key
+
+# node
 node_modules/
-*.ptau
-*.zkey
+
+# hardhat
+artifacts/
+cache/
+
+# logs
+logs/
+*.log
+
+# build
+dist/
 build/
+
+# backups y paquetes
+*.zip
+*.tar
+*.gz
+
+# sistema
+.DS_Store
+Thumbs.db

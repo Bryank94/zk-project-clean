@@ -3,7 +3,7 @@ async function main() {
 
   console.log("Deploying with:", deployer.address);
 
-  const Verifier = await ethers.getContractFactory("Groth16Verifier");
+  const Verifier = await ethers.getContractFactory("ScoreProofVerifier");
 
   const verifier = await Verifier.deploy();
 
