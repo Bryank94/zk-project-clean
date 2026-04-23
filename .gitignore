@@ -29,3 +29,5 @@ build/
 # sistema
 .DS_Store
 Thumbs.db
+
+*.ptau

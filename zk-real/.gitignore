@@ -1,10 +1,10 @@
 # secretos
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.key
+.env.*
+!.env.example
+node_modules/
+artifacts/
+cache/
 
 # node
 node_modules/
