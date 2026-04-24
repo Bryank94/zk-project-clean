@@ -1,0 +1,8 @@
+{
+  "network": "cardona",
+  "deployer": "0xfC9dC5601B4EfF1Ee3ea50A6CDEAA2a8bC5E8f50",
+  "timestamp": "2026-04-24T13:28:06.120Z",
+  "ScoreProofVerifier": "0xc0E24A5eA69EbCd9Ba1377f1Ef75602742890a01",
+  "ScoreRegistry": "0x578d766A7DB96F605F0CA2897635060b4675FB14",
+  "WenalyzeSBT": "0xdb9f8B32D5Eb6535c7525e9F2CFA96783844a12e"
+}
