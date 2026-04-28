@@ -1,33 +1,54 @@
-# secretos
+# -----------------------------
+# SECRETS
+# -----------------------------
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 *.key
 
-# node
+# -----------------------------
+# NODE
+# -----------------------------
 node_modules/
 
-# hardhat
+# -----------------------------
+# HARDHAT
+# -----------------------------
 artifacts/
 cache/
 
-# logs
+# -----------------------------
+# ZK / SNARKJS FILES
+# -----------------------------
+*.ptau
+*.zkey
+*.wtns
+
+zk-real/build/*.ptau
+zk-real/build/*.zkey
+zk-real/build/*.wtns
+
+# -----------------------------
+# LOGS
+# -----------------------------
 logs/
 *.log
 
-# build
+# -----------------------------
+# BUILD / DIST
+# -----------------------------
 dist/
 build/
 
-# backups y paquetes
+# -----------------------------
+# ARCHIVES
+# -----------------------------
 *.zip
 *.tar
 *.gz
 
-# sistema
+# -----------------------------
+# SYSTEM FILES
+# -----------------------------
 .DS_Store
 Thumbs.db
-
-*.ptau
