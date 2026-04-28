@@ -6,127 +6,114 @@
 
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
+            font-family: 'Segoe UI';
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #333;
         }
 
         .container {
             background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            text-align: center;
+            padding: 30px;
+            border-radius: 12px;
             width: 400px;
+            text-align: center;
         }
 
-        h1 {
-            margin-bottom: 20px;
-            color: #444;
+        input {
+            width: 100%;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
         }
 
         button {
-            background: linear-gradient(135deg, #4CAF50, #2ecc71);
+            margin-top: 10px;
+            padding: 12px;
+            width: 100%;
             border: none;
+            border-radius: 8px;
+            background: #4CAF50;
             color: white;
-            padding: 15px 25px;
-            font-size: 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
             font-weight: bold;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            background: linear-gradient(135deg, #43a047, #27ae60);
+            cursor: pointer;
         }
 
         #resultado {
-            background: #f7f9fc;
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 10px;
+            margin-top: 15px;
             white-space: pre-wrap;
-            text-align: left;
-            font-size: 14px;
-            border: 1px solid #e0e0e0;
-            min-height: 80px;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>ZK App</h1>
 
-        <button onclick="conectarYVerificar()">Verificar Proof</button>
+<div class="container">
+    <h2>ZK Verify</h2>
 
-        <pre id="resultado"></pre>
-    </div>
+    <input id="score" placeholder="Score">
+    <input id="min" placeholder="Min">
+    <input id="max" placeholder="Max">
+    <input id="age" placeholder="Age">
 
-    <!-- ethers -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <button onclick="verificar()">Verificar</button>
 
-    <script>
-    async function conectarYVerificar() {
-        const resultado = document.getElementById("resultado");
+    <pre id="resultado"></pre>
+</div>
 
-        try {
-            resultado.innerText = "1) Generando proof...\n";
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
-            const score = 812;
-            const min = 700;
-            const max = 850;
-            const age = 25;
+<script>
+async function verificar() {
+    const resultado = document.getElementById("resultado");
 
-            // BACKEND
-            const res = await fetch(`/prove?score=${score}&min=${min}&max=${max}&age=${age}`);
-            const data = await res.json();
+    try {
+        // ✅ INPUTS REALES (NO HARDCODE)
+        const score = document.getElementById("score").value;
+        const min = document.getElementById("min").value;
+        const max = document.getElementById("max").value;
+        const age = document.getElementById("age").value;
 
-            if (!data.success) {
-                throw new Error(data.error);
-            }
+        resultado.innerText = "⚠️ Generación de proof en frontend pendiente...\n";
 
-            resultado.innerText += "2) Proof generado\n";
+        // ⚠️ Aquí iría snarkjs en fase siguiente
 
-            const { pA, pB, pC, pubSignals } = data;
+        // Mock temporal (solo para probar contrato)
+        const pA = [0, 0];
+        const pB = [[0, 0], [0, 0]];
+        const pC = [0, 0];
+        const pubSignals = [0,0,0,0,0,0,0,0];
 
-            // ✅ USAR METAMASK (NO RPC HARDCODEADO)
-            if (!window.ethereum) {
-                throw new Error("MetaMask no detectado");
-            }
+        if (!window.ethereum) throw new Error("MetaMask no detectado");
 
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
 
-            const contractAddress = "0x03B311c1fE7DB984eC296e572206c92714EF97f6";
+        const contractAddress = "TU_CONTRATO_AQUI";
 
-            const abi = [
-                "function verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[2]) public view returns(bool)"
-            ];
+        const abi = [
+            "function verifyScore(uint256[2],uint256[2][2],uint256[2],uint256[8]) external"
+        ];
 
-            const contract = new ethers.Contract(contractAddress, abi, provider);
+        const contract = new ethers.Contract(contractAddress, abi, signer);
 
-            resultado.innerText += "3) Verificando on-chain...\n";
+        resultado.innerText += "⛓️ Enviando transacción...\n";
 
-            const ok = await contract.verifyProof(pA, pB, pC, pubSignals);
+        const tx = await contract.verifyScore(pA, pB, pC, pubSignals);
+        await tx.wait();
 
-            resultado.innerText += "Resultado: " + (ok ? "✅ VÁLIDO" : "❌ INVÁLIDO");
+        resultado.innerText += "✅ Verificado en blockchain";
 
-        } catch (err) {
-            console.error(err);
-            document.getElementById("resultado").innerText =
-                "ERROR: " + err.message;
-        }
+    } catch (err) {
+        resultado.innerText = "ERROR: " + err.message;
     }
-    </script>
+}
+</script>
+
 </body>
 </html>
