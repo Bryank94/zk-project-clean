@@ -79,14 +79,13 @@ describe("ScoreRegistry", function () {
     ).to.emit(registry, "ScoreVerified");
   });
 
-  it("allows different users (no wallet binding yet)", async function () {
+  it("reverts when nullifier reused by different user", async function () {
     const { registry, a, b, c, input } = await deployFixture(true);
 
     const [_, user1, user2] = await ethers.getSigners();
 
     await registry.connect(user1).verifyScore(a, b, c, input);
 
-    // debería fallar por nullifier, no por wallet
     await expect(
       registry.connect(user2).verifyScore(a, b, c, input)
     ).to.be.revertedWithCustomError(registry, "NullifierAlreadyUsed");

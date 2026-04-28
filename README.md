@@ -372,6 +372,15 @@ La implementación del emisor y la del circuito deben usar el mismo hash (Poseid
 
 ---
 
+## ZK Verification Flow
+
+1. Circuit compiled with Circom.
+2. Proof generated with snarkjs.
+3. Verified off-chain (snarkjs OK).
+4. Verified on-chain via `ScoreRegistry`.
+
+---
+
 ## Checklist de seguridad
 
 - El prover NO puede modificar el score sin invalidar la prueba.
@@ -380,6 +389,14 @@ La implementación del emisor y la del circuito deben usar el mismo hash (Poseid
 - El threshold es público y proporcionado por el verificador, nunca por el prover.
 - La prueba no puede reutilizarse gracias al nullifier y al verifierChallenge.
 - El circuito verifica TODAS las condiciones críticas sin confiar en el prover.
+
+---
+
+## Security
+
+- Nullifier prevents replay.
+- Proof verified via Groth16.
+- Contracts use AccessControl + Pausable.
 
 ---
 
@@ -514,3 +531,13 @@ Se ejecutaron 5 tests para verificar que el circuito acepta únicamente pruebas 
 - Resultado esperado: fallo.
 - Resultado obtenido: fallo en `generate_witness` con error en `EdDSAPoseidonVerifier`.
 - Conclusión: el sistema impide el uso de firmas inválidas y garantiza que solo el emisor autorizado puede generar credenciales válidas.
+
+---
+
+## Testing
+
+Run:
+
+```bash
+npx hardhat test
+```
