@@ -25,3 +25,15 @@ Initial alert rules:
 3. Alert on repeated reverted transactions
 4. Alert if verifier contract changes
 5. Alert on unexpected mint/revoke activity
+
+## Event Watcher
+
+Run the minimal event watcher from the project root:
+
+```bash
+node monitoring/scripts/monitor.js
+```
+
+Required environment variable:
+
+- `AMOY_RPC_URL`

@@ -1,4 +1,4 @@
-﻿type ScoreVerified @entity {
+﻿type ScoreVerified @entity(immutable: true) {
   id: ID!
   user: Bytes!
   threshold: BigInt!
