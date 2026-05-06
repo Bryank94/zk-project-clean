@@ -71,42 +71,59 @@
 
 <script>
 async function verificar() {
+
     const resultado = document.getElementById("resultado");
 
     try {
+
         const score = document.getElementById("score").value;
-        const min = document.getElementById("min").value;
-        const max = document.getElementById("max").value;
-        const age = document.getElementById("age").value;
 
         resultado.innerText = "🧠 Generando proof...\n";
 
         const input = {
-            rawScore: score,
-            min: min,
-            max: max,
-            age: age,
             threshold: 50,
-            scoreCommitment: 0,
-            pymeIdentityCommitment: 0,
-            issuerPublicKey: ["0", "0"],
-            currentTime: 0,
-            verifierChallenge: 0,
-            nullifier: 0,
-            pymeWallet: 0,
+
+            scoreCommitment: "1828694561859135142315785939528123813783741466470461312657280882272118608432",
+
+            pymeIdentityCommitment: "6345863451453377512665308172968222120705674583383993850509137933149523989333",
+
+            issuerPublicKey: [
+                "13277427435165878497778222415993513565335242147425444199013288855685581939618",
+                "13622229784656158136036771217484571176836296686641868549125388198837476602820"
+            ],
+
+            currentTime: 1500,
+
+            verifierChallenge: 42,
+
+            nullifier: "9459122632437298107768407837195669547800864835951019151397568864163023096687",
+
+            rawScore: Number(score),
+
+            pymeWallet: 999,
+
             modelVersion: 1,
-            timestamp: 0,
-            expiration: 0,
-            commitmentSecret: 0,
-            R8: ["0", "0"],
-            S: "0"
+
+            timestamp: 1000,
+
+            expiration: 2000,
+
+            commitmentSecret: 111,
+
+            R8: [
+                "5015139619045954206474415578725831664060734670977162064736430465212205601335",
+                "7017476504340807006609949834212487295402829039004399303015852829970760537569"
+            ],
+
+            S: "1440017176449704957073697959354809310999861398155768461944574784261280978291"
         };
 
-        const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-            input,
-            "../zk-real/build/ScoreProof_v2_js/ScoreProof_v2.wasm",
-            "../zk-real/build/ScoreProof_v2_final.zkey"
-        );
+        const { proof, publicSignals } =
+            await snarkjs.groth16.fullProve(
+                input,
+                "/wasm/ScoreProof_v2.wasm",
+                "/zkey/ScoreProof_v2_final.zkey"
+            );
 
         resultado.innerText += "📤 Proof generada\n";
 
@@ -114,19 +131,24 @@ async function verificar() {
             throw new Error("MetaMask no detectado");
         }
 
-        await window.ethereum.request({ method: "eth_requestAccounts" });
+        await window.ethereum.request({
+            method: "eth_requestAccounts"
+        });
 
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const provider =
+            new ethers.providers.Web3Provider(window.ethereum);
+
         const signer = provider.getSigner();
 
-        // CAMBIA ESTO POR LA DIRECCION REAL DE TU CONTRATO
-        const contractAddress = "0x578d766A7DB96F605F0CA2897635060b4675FB14";
+        const contractAddress =
+            "0x71cc8ff9AaA8D7a2074059F285D907808A0307a6";
 
         const abi = [
             "function verifyScore(uint256[2],uint256[2][2],uint256[2],uint256[8]) external"
         ];
 
-        const contract = new ethers.Contract(contractAddress, abi, signer);
+        const contract =
+            new ethers.Contract(contractAddress, abi, signer);
 
         const pA = proof.pi_a.slice(0, 2);
 
@@ -139,13 +161,23 @@ async function verificar() {
 
         resultado.innerText += "⛓️ Enviando tx...\n";
 
-        const tx = await contract.verifyScore(pA, pB, pC, publicSignals);
+        const tx =
+            await contract.verifyScore(
+                pA,
+                pB,
+                pC,
+                publicSignals
+            );
+
         await tx.wait();
 
-        resultado.innerText += "✅ Verificado en blockchain";
+        resultado.innerText +=
+            "✅ Verificado en blockchain";
 
     } catch (err) {
-        resultado.innerText = "ERROR: " + err.message;
+
+        resultado.innerText =
+            "ERROR: " + err.message;
     }
 }
 </script>

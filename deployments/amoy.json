@@ -1,8 +1,8 @@
 {
-  "network": "cardona",
+  "network": "amoy",
   "deployer": "0xfC9dC5601B4EfF1Ee3ea50A6CDEAA2a8bC5E8f50",
-  "timestamp": "2026-04-24T13:28:06.120Z",
-  "ScoreProofVerifier": "0xc0E24A5eA69EbCd9Ba1377f1Ef75602742890a01",
-  "ScoreRegistry": "0x578d766A7DB96F605F0CA2897635060b4675FB14",
-  "WenalyzeSBT": "0xdb9f8B32D5Eb6535c7525e9F2CFA96783844a12e"
+  "timestamp": "2026-05-06T12:26:59.688Z",
+  "ScoreProofVerifier": "0x6e5842390c9F6D8291553279A0fbF81F76e84e3C",
+  "ScoreRegistry": "0x71cc8ff9AaA8D7a2074059F285D907808A0307a6",
+  "WenalyzeSBT": "0x0528A78C282e0BC9fCB93620B596019085B2cFC7"
 }

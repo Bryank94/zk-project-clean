@@ -3,65 +3,28 @@ pragma circom 2.0.0;
 include "circomlib/circuits/poseidon.circom";
 
 template CommitmentVerifier() {
-
-    // =========================
-    // PUBLIC INPUTS
-    // =========================
-
     signal input scoreCommitment;
     signal input pymeIdentityCommitment;
-
-    // =========================
-    // PRIVATE INPUTS (WITNESS)
-    // =========================
 
     signal input rawScore;
     signal input pymeWallet;
     signal input modelVersion;
     signal input timestamp;
     signal input expiration;
-    signal input salt;
+    signal input commitmentSecret;
 
-    // =========================
-    // INTERNAL SIGNALS
-    // =========================
+    component hashScore = Poseidon(6);
+    hashScore.inputs[0] <== rawScore;
+    hashScore.inputs[1] <== pymeWallet;
+    hashScore.inputs[2] <== modelVersion;
+    hashScore.inputs[3] <== timestamp;
+    hashScore.inputs[4] <== expiration;
+    hashScore.inputs[5] <== commitmentSecret;
 
-    signal issuerMessage;
-    signal computedIdentityCommitment;
+    component hashIdentity = Poseidon(2);
+    hashIdentity.inputs[0] <== pymeWallet;
+    hashIdentity.inputs[1] <== commitmentSecret;
 
-    // =========================
-    // 1. RECONSTRUCT issuerMessage
-    // =========================
-
-    component msgHash = Poseidon(6);
-
-    msgHash.inputs[0] <== rawScore;
-    msgHash.inputs[1] <== pymeWallet;
-    msgHash.inputs[2] <== modelVersion;
-    msgHash.inputs[3] <== timestamp;
-    msgHash.inputs[4] <== expiration;
-    msgHash.inputs[5] <== salt;
-
-    issuerMessage <== msgHash.out;
-
-    // =========================
-    // 2. CHECK AGAINST PUBLIC COMMITMENT
-    // =========================
-
-    issuerMessage === scoreCommitment;
-
-    // =========================
-    // 3. IDENTITY BINDING
-    // =========================
-
-    component identityHash = Poseidon(2);
-
-    identityHash.inputs[0] <== pymeWallet;
-    identityHash.inputs[1] <== salt;
-
-    computedIdentityCommitment <== identityHash.out;
-
-    computedIdentityCommitment === pymeIdentityCommitment;
+    hashScore.out === scoreCommitment;
+    hashIdentity.out === pymeIdentityCommitment;
 }
-
-component main = CommitmentVerifier();
