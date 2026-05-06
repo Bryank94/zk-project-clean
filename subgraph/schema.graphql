@@ -1,0 +1,7 @@
+﻿type ScoreVerified @entity {
+  id: ID!
+  user: Bytes!
+  threshold: BigInt!
+  nullifier: Bytes!
+  oracleKeyHash: Bytes!
+}

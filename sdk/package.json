@@ -1,0 +1,22 @@
+﻿{
+  "name": "@esencia/zk-sdk",
+  "version": "0.1.0",
+  "description": "Client-side SDK for Wenalyze zero-knowledge proof generation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "zk",
+    "snarkjs",
+    "circom",
+    "wenalyze"
+  ],
+  "author": "TuNombre",
+  "license": "MIT",
+  "dependencies": {
+    "snarkjs": "^0.7.6",
+    "typescript": "^5.0.0"
+  }
+}

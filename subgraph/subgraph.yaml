@@ -1,0 +1,26 @@
+﻿specVersion: 0.0.5
+description: Wenalyze ZK verification subgraph
+repository: https://github.com/Bryank94/zk-project-clean
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: ScoreRegistry
+    network: polygon-amoy
+    source:
+      address: "0x71cc8ff9AaA8D7a2074059F285D907808A0307a6"
+      abi: ScoreRegistry
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ScoreVerified
+      abis:
+        - name: ScoreRegistry
+          file: ../artifacts/contracts/ScoreRegistry.sol/ScoreRegistry.json
+      eventHandlers:
+        - event: ScoreVerified(indexed address,uint256,indexed bytes32,bytes32)
+          handler: handleScoreVerified
+      file: ./src/mapping.ts

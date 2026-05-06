@@ -541,3 +541,69 @@ Run:
 ```bash
 npx hardhat test
 ```
+
+## Production Readiness
+
+### Current Status
+
+This project is currently deployed as a testnet MVP on Polygon Amoy.
+
+Implemented:
+
+- Client-side ZK proof generation with snarkjs
+- Circom circuit compiled to WASM
+- Groth16 verifier generated with snarkjs
+- ScoreRegistry smart contract
+- WenalyzeSBT smart contract
+- MetaMask frontend integration
+- On-chain proof verification
+- Modular circuit refactor
+- Hardhat tests
+
+### Architecture
+
+User browser
+-> snarkjs fullProve
+-> proof + public signals
+-> MetaMask transaction
+-> ScoreRegistry.verifyScore
+-> ScoreProofVerifier.verifyProof
+-> on-chain event emission
+
+### Privacy Model
+
+The raw score is used locally to generate a zero-knowledge proof.
+
+The score itself is not sent to the blockchain. Only public signals and proof data are submitted.
+
+### Threat Model
+
+Main risks:
+
+- Leaked private keys
+- Reused nullifiers
+- Incorrect trusted setup
+- Malicious frontend substitution
+- RPC/API key leakage
+- Replay attacks
+- Incorrect public signal layout
+
+Current mitigations:
+
+- .env excluded from Git and ZIP files
+- Nullifier replay protection
+- Client-side proof generation
+- AccessControl and Pausable contracts
+- Testnet deployment before mainnet
+- Modular circuit structure
+
+### Mainnet Requirements
+
+Before mainnet:
+
+- Run multi-party Phase-2 MPC ceremony
+- Deploy API service
+- Publish TypeScript SDK
+- Add subgraph indexing
+- Configure monitoring and alerting
+- Complete external audit
