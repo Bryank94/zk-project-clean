@@ -1,11 +1,14 @@
 ﻿import { ethers } from "ethers";
 import * as dotenv from "dotenv";
+import { CreateVerificationDto } from "../verifications/dto/create-verification.dto";
 
 dotenv.config();
 
 const abi = [
   "function verifyScore(uint256[2],uint256[2][2],uint256[2],uint256[8]) external"
 ];
+
+const scoreRegistryInterface = new ethers.Interface(abi);
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -17,24 +20,24 @@ function requireEnv(name: string): string {
   return value;
 }
 
-function getScoreRegistryContract() {
-  const provider = new ethers.JsonRpcProvider(requireEnv("AMOY_RPC_URL"));
-  const wallet = new ethers.Wallet(requireEnv("PRIVATE_KEY"), provider);
-
-  return new ethers.Contract(
-    requireEnv("SCORE_REGISTRY_ADDRESS"),
-    abi,
-    wallet
-  );
+function getProvider() {
+  return new ethers.JsonRpcProvider(requireEnv("AMOY_RPC_URL"));
 }
 
-export const scoreRegistry = {
-  verifyScore(
-    pA: [string, string],
-    pB: [[string, string], [string, string]],
-    pC: [string, string],
-    publicSignals: string[]
-  ) {
-    return getScoreRegistryContract().verifyScore(pA, pB, pC, publicSignals);
-  },
-};
+export async function buildVerifyScoreTransaction(body: CreateVerificationDto) {
+  const provider = getProvider();
+  const network = await provider.getNetwork();
+  const to = requireEnv("SCORE_REGISTRY_ADDRESS");
+
+  return {
+    to,
+    chainId: Number(network.chainId),
+    data: scoreRegistryInterface.encodeFunctionData("verifyScore", [
+      body.pA,
+      body.pB,
+      body.pC,
+      body.publicSignals,
+    ]),
+    value: "0x0",
+  };
+}

@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AttestationsModule } from './attestations/attestations.module';
@@ -6,7 +7,12 @@ import { VerificationSessionsModule } from './verification-sessions/verification
 import { VerificationsModule } from './verifications/verifications.module';
 
 @Module({
-  imports: [AttestationsModule, VerificationSessionsModule, VerificationsModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    AttestationsModule,
+    VerificationSessionsModule,
+    VerificationsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

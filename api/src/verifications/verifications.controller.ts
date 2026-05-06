@@ -1,27 +1,22 @@
 ﻿import { Body, Controller, InternalServerErrorException, Post } from '@nestjs/common';
-import { scoreRegistry } from '../blockchain/score-registry';
+import { buildVerifyScoreTransaction } from '../blockchain/score-registry';
+import { CreateVerificationDto } from './dto/create-verification.dto';
 
 @Controller('verifications')
 export class VerificationsController {
   @Post()
-  async verify(@Body() body: any) {
+  async verify(@Body() body: CreateVerificationDto) {
     try {
-      const tx = await scoreRegistry.verifyScore(
-        body.pA,
-        body.pB,
-        body.pC,
-        body.publicSignals
-      );
-
-      const receipt = await tx.wait();
+      const transaction = await buildVerifyScoreTransaction(body);
 
       return {
-        status: 'verified',
-        txHash: receipt.hash,
+        status: 'ready_for_signature',
+        message: 'Submit this transaction with MetaMask or another user-controlled wallet.',
+        transaction,
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        error instanceof Error ? error.message : 'Blockchain verification failed'
+        error instanceof Error ? error.message : 'Blockchain transaction preparation failed'
       );
     }
   }

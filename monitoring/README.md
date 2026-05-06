@@ -34,6 +34,14 @@ Run the minimal event watcher from the project root:
 node monitoring/scripts/monitor.js
 ```
 
-Required environment variable:
+Required environment variables:
 
 - `AMOY_RPC_URL`
+- `SCORE_REGISTRY_ADDRESS` optional; defaults to the Amoy ScoreRegistry deployment
+- `MONITOR_RETRY_MS` optional; defaults to `5000`
+
+The watcher writes structured JSON lines to:
+
+```text
+logs/score-verified-events.log
+```
